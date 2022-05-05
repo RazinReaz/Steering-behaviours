@@ -9,6 +9,7 @@ class Boid {
         this.maxForce = 0.5;
         this.perceptionRadius = 100;
         this.wanderAngle = 0;
+        this.currentMarker = 0;
 
         this.mass = mass;
         this.density = density;
@@ -44,13 +45,13 @@ class Boid {
         let d = desire.mag();
         let speed = this.maxSpeed;
         let factor = (d < vicinity) ? d / vicinity : 1;
-        if(d < threshold) factor = 0;
+        if (d < threshold) factor = 0;
         desire.setMag(speed * factor);
         let followForce = p5.Vector.sub(desire, this.velocity);
         return followForce.div(this.mass);
     }
 
-    arrive(target){
+    arrive(target) {
         this.acceleration.add(this.arriveAcceleration(target))
     }
 
@@ -84,7 +85,7 @@ class Boid {
         this.acceleration.add(this.fleeAcceleration(monster))
     }
 
-    
+
 
     wanderAcceleration() {
         //Change these const variables to change the wandering behaviours
@@ -185,7 +186,7 @@ class Boid {
         }
         return cohesion;
     }
-    
+
     seperate(boids) {
         let total = 0;
         let seperation = createVector();
@@ -222,6 +223,18 @@ class Boid {
         this.acceleration.add(seperation);
     }
 
+    followPath(path) {
+        //path is a Path object
+        let n = path.markers.length;
+
+        let targetMarker = path.markers[this.currentMarker];
+        let d = p5.Vector.sub(targetMarker.position, this.position).mag(); //distance from boid to target
+        if (d < targetMarker.radius) this.currentMarker = (this.currentMarker + 1) % n;
+
+        let target = targetMarker.position;
+        this.seek(target);
+    }
+
 
     update() {
         this.position.add(this.velocity);
@@ -232,7 +245,7 @@ class Boid {
 
     show() {
         noStroke();
-        push(); 
+        push();
         {
             fill(this.color);
             translate(this.position.x, this.position.y);
