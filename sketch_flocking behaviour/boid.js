@@ -8,6 +8,7 @@ class Boid {
         this.maxSpeed = maxSpeed;
         this.maxForce = 0.5;
         this.perceptionRadius = 100;
+        this.wanderAngle = 0;
 
         this.mass = mass;
         this.density = density;
@@ -35,40 +36,58 @@ class Boid {
     }
 
 
-    arrive(targetx, targety) {
+    arriveAcceleration(target) {
         let vicinity = 100;
-        let target = createVector(targetx, targety);
+        let threshold = 0.1;
         let desire = p5.Vector.sub(target, this.position);
 
         let d = desire.mag();
         let speed = this.maxSpeed;
         let factor = (d < vicinity) ? d / vicinity : 1;
+        if(d < threshold) factor = 0;
         desire.setMag(speed * factor);
         let followForce = p5.Vector.sub(desire, this.velocity);
-        return followForce;
+        return followForce.div(this.mass);
     }
 
-    seek(targetx, targety) {
-        let target = createVector(targetx, targety);
+    arrive(target){
+        this.acceleration.add(this.arriveAcceleration(target))
+    }
+
+    seekAcceleration(target) {
+        //target is a vector instance
         let desire = p5.Vector.sub(target, this.position);
         desire.setMag(this.maxSpeed);
         let seekForce = p5.Vector.sub(desire, this.velocity);
-        this.acceleration.add(seekForce.div(this.mass));
-        return seekForce;
+        return seekForce.div(this.mass);
     }
 
-    flee(fleeX, fleeY) {
-        let vicinity = 100;
-        let monster = createVector(fleeX, fleeY);
+    seek(target) {
+        //target is a p5 vector instance
+        this.acceleration.add(this.seekAcceleration(target))
+    }
+
+    fleeAcceleration(monster) {
+        //monster is a p5 vector instance
+        let vicinity = 200;
         let repulse = p5.Vector.sub(this.position, monster);
-        repulse.setMag(this.maxSpeed);
+        let d = repulse.mag();
+        let speed = this.maxSpeed;
+        let factor = (d < vicinity) ? (d / vicinity) : 1;
+        repulse.setMag(speed * 0.1 / factor);
         let fleeForce = p5.Vector.sub(repulse, this.velocity);
-        this.acceleration.add(fleeForce.div(this.mass));
-        return fleeForce;
+        return fleeForce.div(this.mass);
     }
 
-    wander() {
-        //Change these to change the wandering behaviours
+    flee(monster) {
+        //monster is a p5 vector instance
+        this.acceleration.add(this.fleeAcceleration(monster))
+    }
+
+    
+
+    wanderAcceleration() {
+        //Change these const variables to change the wandering behaviours
         const CIRCLE_RADIUS = 10;
         const CIRCLE_DISTANCE = 50;
         const ANGLE_CHANGE = PI / 10;
@@ -78,19 +97,43 @@ class Boid {
         let nudgeVector = p5.Vector.fromAngle(this.wanderAngle, CIRCLE_RADIUS);
         this.wanderAngle += ANGLE_CHANGE * (Math.random() - 0.5);
         let wanderForce = p5.Vector.add(toCenter, nudgeVector);
-        this.acceleration.add(wanderForce.div(this.mass));
-        return wanderForce;
+        return wanderForce.div(this.mass);
     }
 
-    pursue(target) {
+    wander() {
+        this.acceleration.add(this.wanderAcceleration())
+    }
+
+    pursueAcceleration(target) {
         //Target is an object of boid instance
         let distanceFromTarget = dist(this.position.x, this.position.y, target.position.x, target.position.y);
         let predictionTime = distanceFromTarget / this.maxSpeed;
 
+        // s = s0 + vt
         let predictedChange = p5.Vector.mult(target.velocity, predictionTime);
         let predictedPosition = p5.Vector.add(target.position, predictedChange);
 
-        this.seek(predictedPosition.x, predictedPosition.y);
+        return this.seekAcceleration(predictedPosition);
+    }
+
+    pursue(target) {
+        //Target is an object of boid instance
+        this.acceleration.add(this.pursueAcceleration(target))
+    }
+
+    evadeAcceleration(enemy) {
+        //enemy is an object of boid instance
+        let distanceFromEnemy = dist(this.position.x, this.position.y, enemy.position.x, enemy.position.y);
+        let predictionTime = distanceFromEnemy / this.maxSpeed;
+
+        // s = s0 + vt
+        let predictedChange = p5.Vector.mult(enemy.velocity, predictionTime);
+        let predictedPosition = p5.Vector.add(enemy.position, predictedChange);
+
+        return this.fleeAcceleration(predictedPosition);
+    }
+    evade(enemy) {
+        this.acceleration.add(this.evadeAcceleration(enemy));
     }
 
     align(boids) {
@@ -179,15 +222,18 @@ class Boid {
         this.acceleration.add(seperation);
     }
 
+
     update() {
         this.position.add(this.velocity);
         this.velocity.add(this.acceleration);
         this.velocity.limit(this.maxSpeed);
         this.acceleration.mult(0);
     }
+
     show() {
         noStroke();
-        push(); {
+        push(); 
+        {
             fill(this.color);
             translate(this.position.x, this.position.y);
             let angle = this.velocity.heading();
