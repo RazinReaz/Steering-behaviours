@@ -1,5 +1,5 @@
 class Marker {
-    constructor(x, y, r = 50) {
+    constructor(x, y, r = 70) {
         this.position = createVector(x, y);
         this.radius = r;
     }
@@ -7,7 +7,6 @@ class Marker {
     show() {
         push();
         {
-            fill(145, 145, 145);
             stroke(201);
             ellipse(this.position.x, this.position.y, 5);
             fill(145, 145, 145, 145);
@@ -51,5 +50,33 @@ class Path {
             endShape();
         }
         pop();
+    }
+
+    updateShape(mouseX, mouseY, movedX, movedY) {
+        for (let marker of this.markers) {
+            let x = marker.position.x;
+            let y = marker.position.y;
+
+            let d = dist(x, y, mouseX, mouseY);
+            if (d <= marker.radius) {
+                marker.position.x += movedX;
+                marker.position.y += movedY;
+            }
+        }
+    }
+
+    updateMarker(mouseX, mouseY) {
+        for (let marker of this.markers) {
+            let x = marker.position.x;
+            let y = marker.position.y;
+
+            let d = dist(x, y, mouseX, mouseY);
+            if (d <= marker.radius) {
+                let new_d = dist(x, y, mouseX+movedX, mouseY+movedY);
+                let dr = Math.sqrt(movedX**2 + movedY**2);
+                if(new_d > d) marker.radius += dr;
+                else marker.radius -= dr;
+            }
+        }
     }
 }

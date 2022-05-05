@@ -229,6 +229,8 @@ class Boid {
 
         let targetMarker = path.markers[this.currentMarker];
         let d = p5.Vector.sub(targetMarker.position, this.position).mag(); //distance from boid to target
+        
+        //!the 0.8 here
         if (d < targetMarker.radius) this.currentMarker = (this.currentMarker + 1) % n;
 
         let target = targetMarker.position;

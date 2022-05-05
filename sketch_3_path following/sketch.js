@@ -6,13 +6,13 @@ let path;
 
 function setup() {
   createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
-  racer = new Boid(random(width), random(height), 5, 'cyan', 10, 1);
+  racer = new Boid(random(width), random(height), 5, 'cyan', 5, 5);
   let points = [
     { x: 80, y: 150 },
     { x: 200, y: 100 },
     { x: 450, y: 380 },
-    { x: 300, y: 500 },
-    { x: 380, y: 550 }];
+    { x: 380, y: 550 },
+    { x: 300, y: 500 }];
 
   path = new Path(points);
 }
@@ -20,8 +20,11 @@ function setup() {
 function draw() {
   background(51);
   path.show();
-  racer.followPath(path);
 
+  if (mouseIsPressed && mouseButton === LEFT) path.updateShape(mouseX, mouseY, movedX, movedY);
+  if (mouseIsPressed && mouseButton === RIGHT) path.updateMarker(mouseX, mouseY, movedX, movedY);
+  
+  racer.followPath(path);
   racer.update();
   racer.show();
 }
